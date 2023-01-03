@@ -27,10 +27,12 @@ class DataGetter:
         'Monthly':'Monthly Time Series'
     }
 
-    def __init__(self, ticker, interval='5'):
+    def __init__(self, ticker, interval='5', high=False, low=False):
         self.ticker = ticker
         self.interval = interval
         self.outputsize = 'compact'
+        self.high = high
+        self.low = low
 
         if interval == 'DAILY' or interval == 'WEEKLY' or interval == 'MONTHLY':
             self.function = self.functions[interval]
@@ -54,7 +56,9 @@ class DataGetter:
         time_series = response[self.interval_names[self.interval]]
 
         times = []
-        values = []
+        close_vals = []
+        high_vals = []
+        low_vals = []
         for i, date in enumerate(time_series):
             time = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
             if i == 0:
@@ -62,17 +66,22 @@ class DataGetter:
             if i > 0 and time.strftime('%Y-%m-%d') != curr_day: break
             time = time.strftime('%H:%M:%S')
             times.append(time)
-            values.append(float(time_series[date]['4. close']))
+            close_vals.append(float(time_series[date]['4. close']))
+            high_vals.append(float(time_series[date]['2. high']))
+            low_vals.append(float(time_series[date]['3. low']))            
 
         fig, ax = plt.subplots()
 
-        ax.plot(times, values)
+        ax.plot(times, close_vals, label='Close', color='blue')
+        if self.high: ax.plot(times, high_vals, label='High', color='green')
+        if self.low: ax.plot(times, low_vals, label='Close', color='red')
         ax.xaxis.set_major_locator(MaxNLocator(nbins=25))
 
         ax.set_xlabel(f'Time ({self.interval} min)')
         ax.set_ylabel('Close Price')
-        ax.set_title(f'Stock Price Over Time')
-
+        ax.set_title(f'Stock Price Over Time ({curr_day})')
+        
+        ax.legend()
         plt.xticks(rotation=45)
         plt.tight_layout()
         plt.show()
@@ -88,16 +97,22 @@ class DataGetter:
             time_series = response[self.interval_names['Monthly']] 
 
         times = []
-        values = []
+        close_vals = []
+        high_vals = []
+        low_vals = []
         for i, date in enumerate(time_series):
             if i == 50: break #Number of data inputs
             time = datetime.strptime(date, '%Y-%m-%d')
             times.append(time)
-            values.append(float(time_series[date]['4. close']))
+            close_vals.append(float(time_series[date]['4. close']))
+            high_vals.append(float(time_series[date]['2. high']))
+            low_vals.append(float(time_series[date]['3. low']))   
 
         fig, ax = plt.subplots()
 
-        ax.plot(times, values)
+        ax.plot(times, close_vals, label='Close', color='blue')
+        if self.high: ax.plot(times, high_vals, label='High', color='green')
+        if self.low: ax.plot(times, low_vals, label='Close', color='red')
         ax.xaxis.set_major_locator(MaxNLocator(nbins=20))
 
         ax.set_xlabel('Time')
@@ -110,6 +125,7 @@ class DataGetter:
         ax.set_ylabel('Close Price')
         ax.set_title(f'Stock Price Over Time')
 
+        ax.legend()
         plt.xticks(rotation=45)
         plt.tight_layout()
         plt.show()
