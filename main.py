@@ -1,7 +1,11 @@
-from data import DataGetter
-import pandas as pd
+from GUI import GUI, QApplication
+import sys
 
-stock = 'TSLA'
+def main():
 
-d = DataGetter(stock, interval='60', high=True, low=True)
-d.showPlot()
+    app = QApplication([])
+    window = GUI()
+    app.exec_()
+    
+if __name__ == '__main__':
+    main()

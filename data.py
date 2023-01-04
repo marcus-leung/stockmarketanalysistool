@@ -71,6 +71,7 @@ class DataGetter:
             low_vals.append(float(time_series[date]['3. low']))            
 
         fig, ax = plt.subplots()
+        plt.ion()
 
         ax.plot(times, close_vals, label='Close', color='blue')
         if self.high: ax.plot(times, high_vals, label='High', color='green')
@@ -109,6 +110,7 @@ class DataGetter:
             low_vals.append(float(time_series[date]['3. low']))   
 
         fig, ax = plt.subplots()
+        plt.ion()
 
         ax.plot(times, close_vals, label='Close', color='blue')
         if self.high: ax.plot(times, high_vals, label='High', color='green')
