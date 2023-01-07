@@ -27,12 +27,13 @@ class DataGetter:
         'Monthly':'Monthly Time Series'
     }
 
-    def __init__(self, ticker, interval='5', high=False, low=False):
+    def __init__(self, ticker, interval='5', high=False, low=False, SMA=None):
         self.ticker = ticker
         self.interval = interval
-        self.outputsize = 'compact'
+        self.outputsize = 'full'
         self.high = high
         self.low = low
+        self.SMA = SMA
 
         if interval == 'DAILY' or interval == 'WEEKLY' or interval == 'MONTHLY':
             self.function = self.functions[interval]
@@ -59,30 +60,52 @@ class DataGetter:
         close_vals = []
         high_vals = []
         low_vals = []
+        SMA = []
+        market_open_time = datetime.strptime('09:30:00', '%H:%M:%S')
+        market_close_time = datetime.strptime('16:00:00', '%H:%M:%S')
         for i, date in enumerate(time_series):
             time = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
             if i == 0:
                 curr_day = time.strftime('%Y-%m-%d')
             if i > 0 and time.strftime('%Y-%m-%d') != curr_day: break
-            time = time.strftime('%H:%M:%S')
-            times.append(time)
-            close_vals.append(float(time_series[date]['4. close']))
-            high_vals.append(float(time_series[date]['2. high']))
-            low_vals.append(float(time_series[date]['3. low']))            
+
+            if time.time() >= market_open_time.time() and time.time() <= market_close_time.time():
+                time = time.strftime('%I:%M:%S') 
+                times.append(time)
+                close_vals.append(float(time_series[date]['4. close']))
+                high_vals.append(float(time_series[date]['2. high']))
+                low_vals.append(float(time_series[date]['3. low']))
+
+        if self.SMA is not None:
+            for i in range(len(close_vals)-self.SMA+1):
+                total_over_period = close_vals[i:i+self.SMA] 
+                curr_SMA = sum(total_over_period)/self.SMA
+                SMA.append(round(curr_SMA, 2))
 
         fig, ax = plt.subplots()
         plt.ion()
 
+        times = times[::-1]
+        close_vals = close_vals[::-1]
+        high_vals = high_vals[::-1]
+        low_vals = low_vals[::-1]
+
         ax.plot(times, close_vals, label='Close', color='blue')
         if self.high: ax.plot(times, high_vals, label='High', color='green')
         if self.low: ax.plot(times, low_vals, label='Close', color='red')
-        ax.xaxis.set_major_locator(MaxNLocator(nbins=25))
+        if self.SMA: ax.plot(times[self.SMA-1:], SMA[::-1], label=f'{self.SMA} SMA', color='orange')
+        
+        if self.interval == '60':
+            ax.xaxis.set_major_locator(MaxNLocator(nbins=7))
+        else:
+            ax.xaxis.set_major_locator(MaxNLocator(nbins=20))
 
         ax.set_xlabel(f'Time ({self.interval} min)')
         ax.set_ylabel('Close Price')
         ax.set_title(f'Stock Price Over Time ({curr_day})')
         
         ax.legend()
+        plt.grid()
         plt.xticks(rotation=45)
         plt.tight_layout()
         plt.show()
@@ -101,6 +124,7 @@ class DataGetter:
         close_vals = []
         high_vals = []
         low_vals = []
+        SMA = []
         for i, date in enumerate(time_series):
             if i == 50: break #Number of data inputs
             time = datetime.strptime(date, '%Y-%m-%d')
@@ -109,14 +133,23 @@ class DataGetter:
             high_vals.append(float(time_series[date]['2. high']))
             low_vals.append(float(time_series[date]['3. low']))   
 
+
+        if self.SMA is not None:
+            for i in range(len(close_vals)-self.SMA+1):
+                total_over_period = close_vals[i:i+self.SMA]
+                curr_SMA = sum(total_over_period)/self.SMA
+                SMA.append(round(curr_SMA, 2))
+
+
         fig, ax = plt.subplots()
         plt.ion()
 
         ax.plot(times, close_vals, label='Close', color='blue')
         if self.high: ax.plot(times, high_vals, label='High', color='green')
         if self.low: ax.plot(times, low_vals, label='Close', color='red')
-        ax.xaxis.set_major_locator(MaxNLocator(nbins=20))
+        if self.SMA: ax.plot(times[:len(times)-self.SMA+1], SMA, label=f'{self.SMA} SMA', color='orange')
 
+        ax.xaxis.set_major_locator(MaxNLocator(nbins=20))
         ax.set_xlabel('Time')
         if self.function == self.functions['DAILY']:
             ax.set_xlabel(f'Time (Daily)')
@@ -128,6 +161,7 @@ class DataGetter:
         ax.set_title(f'Stock Price Over Time')
 
         ax.legend()
+        plt.grid()
         plt.xticks(rotation=45)
         plt.tight_layout()
         plt.show()

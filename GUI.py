@@ -46,6 +46,11 @@ class GUI(QMainWindow):
 
         high = self.high.isChecked()
         low = self.low.isChecked()
+        
+        if self.SMA.isChecked():
+            SMA = int(self.SMA_period.currentText())
+        else:
+            SMA = None
 
-        data = DataGetter(stock, interval=interval, high=high, low=low)
+        data = DataGetter(stock, interval=interval, high=high, low=low, SMA=SMA)
         data.showPlot()

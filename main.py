@@ -1,5 +1,4 @@
 from GUI import GUI, QApplication
-import sys
 
 def main():
 
