@@ -27,13 +27,15 @@ class DataGetter:
         'Monthly':'Monthly Time Series'
     }
 
-    def __init__(self, ticker, interval='5', high=False, low=False, SMA=None):
+    def __init__(self, ticker, interval='5', high=False, low=False, SMA=None, EMA=None, fib=False):
         self.ticker = ticker
         self.interval = interval
         self.outputsize = 'full'
         self.high = high
         self.low = low
         self.SMA = SMA
+        self.EMA = EMA
+        self.fib = fib
 
         if interval == 'DAILY' or interval == 'WEEKLY' or interval == 'MONTHLY':
             self.function = self.functions[interval]
@@ -60,7 +62,6 @@ class DataGetter:
         close_vals = []
         high_vals = []
         low_vals = []
-        SMA = []
         market_open_time = datetime.strptime('09:30:00', '%H:%M:%S')
         market_close_time = datetime.strptime('16:00:00', '%H:%M:%S')
         for i, date in enumerate(time_series):
@@ -77,10 +78,10 @@ class DataGetter:
                 low_vals.append(float(time_series[date]['3. low']))
 
         if self.SMA is not None:
-            for i in range(len(close_vals)-self.SMA+1):
-                total_over_period = close_vals[i:i+self.SMA] 
-                curr_SMA = sum(total_over_period)/self.SMA
-                SMA.append(round(curr_SMA, 2))
+            SMA = self.calc_SMA(close_vals, self.SMA)
+
+        if self.EMA is not None:
+            EMA = self.calc_EMA(close_vals, self.EMA)
 
         fig, ax = plt.subplots()
         plt.ion()
@@ -94,6 +95,7 @@ class DataGetter:
         if self.high: ax.plot(times, high_vals, label='High', color='green')
         if self.low: ax.plot(times, low_vals, label='Close', color='red')
         if self.SMA: ax.plot(times[self.SMA-1:], SMA[::-1], label=f'{self.SMA} SMA', color='orange')
+        if self.EMA: ax.plot(times[self.EMA-1:], EMA[::-1], label=f'{self.EMA} EMA', color='yellow')
         
         if self.interval == '60':
             ax.xaxis.set_major_locator(MaxNLocator(nbins=7))
@@ -103,8 +105,12 @@ class DataGetter:
         ax.set_xlabel(f'Time ({self.interval} min)')
         ax.set_ylabel('Close Price')
         ax.set_title(f'Stock Price Over Time ({curr_day})')
-        
         ax.legend()
+
+        if self.fib:
+            for v in self.calc_fib_retra_lvls(close_vals):
+                plt.axhline(y=v, color='black', linestyle='dashed')
+
         plt.grid()
         plt.xticks(rotation=45)
         plt.tight_layout()
@@ -133,13 +139,11 @@ class DataGetter:
             high_vals.append(float(time_series[date]['2. high']))
             low_vals.append(float(time_series[date]['3. low']))   
 
-
         if self.SMA is not None:
-            for i in range(len(close_vals)-self.SMA+1):
-                total_over_period = close_vals[i:i+self.SMA]
-                curr_SMA = sum(total_over_period)/self.SMA
-                SMA.append(round(curr_SMA, 2))
+            SMA = self.calc_SMA(close_vals, self.SMA)
 
+        if self.EMA is not None:
+            EMA = self.calc_EMA(close_vals, self.EMA)
 
         fig, ax = plt.subplots()
         plt.ion()
@@ -148,6 +152,7 @@ class DataGetter:
         if self.high: ax.plot(times, high_vals, label='High', color='green')
         if self.low: ax.plot(times, low_vals, label='Close', color='red')
         if self.SMA: ax.plot(times[:len(times)-self.SMA+1], SMA, label=f'{self.SMA} SMA', color='orange')
+        if self.EMA: ax.plot(times[:len(times)-self.EMA+1], EMA, label=f'{self.EMA} EMA', color='yellow')
 
         ax.xaxis.set_major_locator(MaxNLocator(nbins=20))
         ax.set_xlabel('Time')
@@ -159,9 +164,52 @@ class DataGetter:
             ax.set_xlabel(f'Time (Montly)')
         ax.set_ylabel('Close Price')
         ax.set_title(f'Stock Price Over Time')
-
         ax.legend()
+
+        if self.fib:
+            for v in self.calc_fib_retra_lvls(close_vals):
+                plt.axhline(y=v, color='black', linestyle='dashed')
+
         plt.grid()
         plt.xticks(rotation=45)
         plt.tight_layout()
         plt.show()
+
+    def calc_SMA(self, vals, period):
+        SMA = []
+        for i in range(len(vals)-period+1):
+            total_over_period = vals[i:i+self.SMA] 
+            curr_SMA = sum(total_over_period)/self.SMA
+            SMA.append(round(curr_SMA, 2))
+
+        return SMA
+
+    def calc_EMA(self, vals, period, smoothing_val=2):
+        EMA = []
+        EMA.append(sum(vals[:period]) / period) #append SMA of days as first value
+        
+        for val in vals[period:]:
+            ema_val = (val * (smoothing_val/(1 + period))) + EMA[-1] * (1 - (smoothing_val / (1 + period)))
+            EMA.append(ema_val)
+
+        return EMA
+
+    def calc_fib_retra_lvls(self, vals):
+        levels = []
+        lowest = vals[0]
+        highest = vals[0]
+        for val in vals:
+            if val > highest: highest = val
+            if val < lowest: lowest = val
+
+        difference = highest - lowest
+        levels.append(lowest)
+        levels.append(lowest + (difference * 0.236)) 
+        levels.append(lowest + (difference * 0.382))
+        levels.append(lowest + (difference * 0.5))
+        levels.append(lowest + (difference * 0.618))
+        levels.append(lowest + (difference * 0.764))
+        levels.append(highest)
+
+        return levels #returns list of levels in order of 0%, 23.6%, 38.2%, 50%, 61.8%, 76.4%, 100%
+        

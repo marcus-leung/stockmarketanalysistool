@@ -52,5 +52,12 @@ class GUI(QMainWindow):
         else:
             SMA = None
 
-        data = DataGetter(stock, interval=interval, high=high, low=low, SMA=SMA)
+        if self.EMA.isChecked():
+            EMA = int(self.EMA_period.currentText())
+        else:
+            EMA = None
+
+        fib = self.fib_lvl.isChecked()
+
+        data = DataGetter(stock, interval=interval, high=high, low=low, SMA=SMA, EMA=EMA, fib=fib)
         data.showPlot()
