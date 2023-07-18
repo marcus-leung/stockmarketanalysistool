@@ -1,4 +1,4 @@
-**Stock Market Anyalysis and Visualization Application**
+**Stock Market Analysis and Visualization Application**
 
 - Python application that tracks stock market prices 
 - Utilizes Alpha Vantage API, Matplotlib, and PyQt5
